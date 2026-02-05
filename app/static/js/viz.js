@@ -1,0 +1,483 @@
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+const logArea = document.getElementById('logArea');
+
+// State
+let graph = null;
+let startNode = null;
+let endNode = null;
+let animationSteps = [];
+let isAnimating = false;
+let animationSpeed = 100;
+
+// Config
+const NODE_RADIUS = 15;
+const COLORS = {
+    bg: '#000000',
+    edge: '#333333',
+    edgeHighlight: '#FFFF00',
+    node: '#00FFFF', // Cyan border for visibility
+    nodeFill: '#000000',
+    start: '#FFFF00', // Pacman
+    end: '#ffb8ae',   // Pellet
+    visited: '#2121DE', // Light blue
+    frontier: '#FFFFFF', // White/Blinking
+    path: '#FFFF00'
+};
+
+// Init
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Interaction listeners for sliders
+document.getElementById('numNodes').addEventListener('input', (e) => {
+    document.getElementById('nodesValue').innerText = e.target.value;
+});
+document.getElementById('density').addEventListener('input', (e) => {
+    document.getElementById('densityValue').innerText = e.target.value;
+});
+
+function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    if (graph) {
+        normalizeGraphCoords(); // Re-normalize on resize
+        drawGraph();
+    }
+}
+
+function log(msg) {
+    console.log(`[SHORTEST-PATH]: ${msg}`);
+}
+
+const ALL_ALGOS = ["Dijkstra", "A*", "Greedy Best-First", "Bellman-Ford", "Uniform Cost Search", "Floyd-Warshall"];
+
+// Sidebar Event Listeners
+document.getElementById('btnGenerate').addEventListener('click', generateGraph);
+document.getElementById('btnRun').addEventListener('click', runAlgorithm);
+document.getElementById('btnViewCode').addEventListener('click', viewAlgorithmCode);
+document.getElementById('btnReset').addEventListener('click', () => {
+    isAnimating = false;
+    currentStepIndex = 0;
+    if (graph) drawGraph();
+});
+document.getElementById('speedSelect').addEventListener('change', (e) => {
+    animationSpeed = parseInt(e.target.value);
+});
+document.getElementById('btnRunAll').addEventListener('click', runAllAlgorithms);
+document.getElementById('closeModal').addEventListener('click', () => {
+    document.getElementById('runAllModal').classList.add('hidden');
+});
+
+
+// Logic
+async function generateGraph() {
+    const numNodes = document.getElementById('numNodes').value;
+    const density = document.getElementById('density').value;
+    const directed = document.getElementById('directed').checked;
+
+    // Clear graph before generating
+    graph = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    log(`Generating graph... Nodes: ${numNodes}`);
+
+    try {
+        const res = await fetch('/api/generate-graph', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                num_nodes: parseInt(numNodes),
+                density: parseFloat(density),
+                directed: directed
+            })
+        });
+
+        graph = await res.json();
+        normalizeGraphCoords();
+
+        // Random Start/End
+        const nodes = graph.nodes;
+        if (nodes.length > 0) {
+            startNode = nodes[Math.floor(Math.random() * nodes.length)].id;
+            let endCandidate = nodes[Math.floor(Math.random() * nodes.length)].id;
+            // Retry a few times to find distinct
+            let retries = 10;
+            while (endCandidate === startNode && retries > 0) {
+                endCandidate = nodes[Math.floor(Math.random() * nodes.length)].id;
+                retries--;
+            }
+            endNode = endCandidate;
+
+            log(`Graph Generated. Start: ${startNode}, End: ${endNode}`);
+            drawGraph();
+            document.getElementById('nodeCount').innerText = nodes.length;
+            document.getElementById('currentCost').innerText = "0";
+            document.getElementById('visitedCount').innerText = "0";
+            document.getElementById('statusText').innerText = "READY";
+        }
+
+    } catch (e) {
+        log(`Error: ${e.message}`);
+    }
+}
+
+function normalizeGraphCoords() {
+    // Basic Normalization to fit canvas with padding
+    if (!graph || graph.nodes.length === 0) return;
+
+    const padding = 50;
+    const width = canvas.width - padding * 2;
+    const height = canvas.height - padding * 2;
+
+    // 1. Find Min/Max X and Y from original data
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    graph.nodes.forEach(n => {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+    });
+
+    const rangeX = maxX - minX || 1; // Avoid divide by zero
+    const rangeY = maxY - minY || 1;
+
+    // 2. Map to canvas
+    graph.nodes.forEach(n => {
+        // Normalize 0..1 then Scale to Width/Height
+        const normX = (n.x - minX) / rangeX;
+        const normY = (n.y - minY) / rangeY;
+
+        n.canvasX = normX * width + padding;
+        n.canvasY = normY * height + padding;
+    });
+}
+
+function drawGraph(stepState = null) {
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (!graph) return;
+
+    // Draw Edges
+    graph.edges.forEach(edge => {
+        const u = graph.nodes.find(n => n.id === edge.source);
+        const v = graph.nodes.find(n => n.id === edge.target);
+
+        if (!u || !v) return;
+
+        ctx.beginPath();
+        ctx.moveTo(u.canvasX, u.canvasY);
+        ctx.lineTo(v.canvasX, v.canvasY);
+
+        if (graph.directed) {
+            // Draw arrow (simplified)
+        }
+
+        ctx.strokeStyle = COLORS.edge;
+        ctx.lineWidth = 1;
+
+        // Highlight edge
+        if (stepState && stepState.parents) {
+            if (stepState.parents[edge.target] === edge.source || stepState.parents[edge.source] === edge.target) {
+                // Bidirectional check implicitly
+                if (stepState.parents[edge.target] === edge.source) {
+                    ctx.strokeStyle = COLORS.visited;
+                    ctx.lineWidth = 2;
+                }
+            }
+        }
+
+        ctx.stroke();
+
+        // Draw Weight (Enhanced Readability)
+        const midX = (u.canvasX + v.canvasX) / 2;
+        const midY = (u.canvasY + v.canvasY) / 2;
+
+        ctx.fillStyle = '#000'; // Black background
+        ctx.fillRect(midX - 6, midY - 6, 12, 12); // Square Box
+
+        ctx.strokeStyle = '#333';
+        ctx.strokeRect(midX - 6, midY - 6, 12, 12); // Border
+
+        ctx.fillStyle = '#00FFFF'; // Paccyan text
+        ctx.font = 'bold 10px Roboto Mono';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(edge.weight, midX, midY);
+    });
+
+    // Draw Nodes
+    graph.nodes.forEach(node => {
+        let color = COLORS.nodeFill;
+        let borderColor = COLORS.node;
+
+        // Dynamic Status
+        if (stepState) {
+            if (stepState.current_node === node.id) {
+                borderColor = '#FFFFFF';
+                color = '#FFFF00'; // Active
+            } else if (stepState.frontier.includes(node.id)) {
+                borderColor = '#FFFFFF'; // Blink?
+            } else if (stepState.visited.includes(node.id)) {
+                color = COLORS.visited;
+            }
+        }
+
+        // Shape
+        ctx.beginPath();
+        ctx.arc(node.canvasX, node.canvasY, NODE_RADIUS, 0, 2 * Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.stroke();
+
+        // Special Roles
+        if (node.id === startNode) {
+            drawPacman(node.canvasX, node.canvasY);
+        } else if (node.id === endNode) {
+            drawGhost(node.canvasX, node.canvasY);
+        }
+
+        // ID
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px Roboto Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.id, node.canvasX, node.canvasY + 4);
+
+        // Distance Label (d=?)
+        let distText = "d=?";
+        if (stepState && stepState.distances[node.id] !== undefined) {
+            let d = stepState.distances[node.id];
+            if (d === "Infinity" || d === Infinity) {
+                distText = "d=∞";
+            } else {
+                distText = `d=${Number(d).toFixed(0)}`;
+            }
+        } else if (node.id === startNode) {
+            distText = "d=0";
+        }
+
+        ctx.fillStyle = '#0f0';
+        ctx.font = '9px Roboto Mono';
+        ctx.fillText(distText, node.canvasX, node.canvasY - 18);
+    });
+
+    if (stepState) {
+        document.getElementById('visitedCount').innerText = stepState.visited.length;
+        document.getElementById('statusText').innerText = "RUNNING";
+        if (stepState.distances[endNode] !== undefined) {
+            let d = stepState.distances[endNode];
+            if (d === "Infinity" || d === Infinity) {
+                document.getElementById('currentCost').innerText = "∞";
+            } else {
+                document.getElementById('currentCost').innerText = Number(d).toFixed(1);
+            }
+        }
+    }
+}
+
+// Preload Image
+const pacmanImg = new Image();
+pacmanImg.className = 'pacman-icon'; // for debugging
+pacmanImg.src = '/static/assets/pacman.png';
+pacmanImg.onload = () => {
+    // Force redraw when image loads
+    if (graph) drawGraph();
+};
+
+const ghostImg = new Image();
+ghostImg.src = '/static/assets/ghost.png';
+ghostImg.onload = () => {
+    if (graph) drawGraph();
+};
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+    const headLength = 10;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const angle = Math.atan2(dy, dx);
+
+    // Shorten line to stop at node boundary
+    const endX = x2 - NODE_RADIUS * Math.cos(angle);
+    const endY = y2 - NODE_RADIUS * Math.sin(angle);
+    const startX = x1 + NODE_RADIUS * Math.cos(angle);
+    const startY = y1 + NODE_RADIUS * Math.sin(angle);
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+
+    // Arrow head
+    ctx.lineTo(endX - headLength * Math.cos(angle - Math.PI / 6), endY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - headLength * Math.cos(angle + Math.PI / 6), endY - headLength * Math.sin(angle + Math.PI / 6));
+
+    ctx.strokeStyle = COLORS.edge;
+    ctx.stroke();
+}
+
+function drawPacman(x, y) {
+    // Draw Image if loaded, else fallback
+    if (pacmanImg.complete && pacmanImg.naturalWidth !== 0) {
+        const size = NODE_RADIUS * 2.5; // Slightly larger than node
+        ctx.drawImage(pacmanImg, x - size / 2, y - size / 2, size, size);
+    } else {
+        ctx.beginPath();
+        ctx.arc(x, y, NODE_RADIUS, 0.2 * Math.PI, 1.8 * Math.PI);
+        ctx.lineTo(x, y);
+        ctx.fillStyle = COLORS.start;
+        ctx.fill();
+    }
+}
+
+function drawGhost(x, y) {
+    if (ghostImg.complete && ghostImg.naturalWidth !== 0) {
+        const size = NODE_RADIUS * 2.5;
+        ctx.drawImage(ghostImg, x - size / 2, y - size / 2, size, size);
+    } else {
+        ctx.beginPath();
+        ctx.arc(x, y - 2, NODE_RADIUS - 2, Math.PI, 0, false);
+        ctx.lineTo(x + NODE_RADIUS - 2, y + NODE_RADIUS - 2);
+        // ctx.lineTo(x - NODE_RADIUS + 2, y + NODE_RADIUS - 2);
+        ctx.fillStyle = COLORS.end;
+        ctx.fill();
+        // Eyes
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x - 5, y - 5, 4, 4);
+        ctx.fillRect(x + 2, y - 5, 4, 4);
+    }
+}
+
+async function runAlgorithm() {
+    if (!graph) {
+        log("No graph generated!");
+        return;
+    }
+
+    const algo = document.getElementById('algorithmSelect').value;
+    log(`Running ${algo}...`);
+    isAnimating = false; // Stop current
+
+    const payload = {
+        algorithm: algo,
+        start_node: startNode,
+        end_node: endNode,
+        graph: graph
+    };
+
+    try {
+        const res = await fetch('/api/run-algorithm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (data.steps) {
+            animationSteps = data.steps;
+            startAnimation();
+        } else {
+            console.error("No steps returned", data);
+            log("No steps returned from algorithm.");
+        }
+    } catch (e) {
+        console.error(e);
+        log(`Error: ${e.message}`);
+    }
+}
+
+async function runAllAlgorithms() {
+    if (!graph) {
+        log("No graph to run!");
+        return;
+    }
+
+    console.log("Running all algorithms...");
+    const modal = document.getElementById('runAllModal');
+    const container = document.getElementById('modalContent');
+    const loading = document.getElementById('modalLoading');
+
+    modal.classList.remove('hidden');
+    container.innerHTML = '';
+    loading.classList.remove('hidden');
+
+    // Sequential execution
+    for (const algo of ALL_ALGOS) {
+        try {
+            const payload = {
+                algorithm: algo,
+                start_node: startNode,
+                end_node: endNode,
+                graph: graph
+            };
+
+            const start = performance.now();
+            const res = await fetch('/api/run-algorithm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            const end = performance.now();
+
+            if (data.steps) {
+                // Find last step
+                const lastStep = data.steps[data.steps.length - 1];
+                const cost = lastStep.distances[endNode];
+                const expanded = lastStep.visited.length;
+                const time = (end - start).toFixed(0);
+
+                const finalCost = (cost === "Infinity" || cost === Infinity) ? "∞" : Number(cost).toFixed(1);
+
+                // Append Card
+                const card = document.createElement('div');
+                card.className = "bg-gray-900 border-2 border-pacblue p-4 text-xs font-mono";
+                card.innerHTML = `
+                    <div class="text-pacyellow font-bold text-sm mb-2 border-b border-gray-700 pb-1">${algo}</div>
+                    <div class="flex justify-between"><span>COST:</span> <span class="text-white">${finalCost}</span></div>
+                    <div class="flex justify-between"><span>NODES:</span> <span class="text-white">${expanded}</span></div>
+                    <div class="flex justify-between"><span>TIME:</span> <span class="text-white">~${time}ms</span></div>
+                 `;
+                container.appendChild(card);
+            }
+
+        } catch (e) {
+            console.error(e);
+            const errCard = document.createElement('div');
+            errCard.className = "bg-red-900/50 border-2 border-red-500 p-4 text-xs font-mono";
+            errCard.innerText = `Error running ${algo}: ${e.message}`;
+            container.appendChild(errCard);
+        }
+    }
+
+    loading.classList.add('hidden');
+}
+
+function startAnimation() {
+    isAnimating = true;
+    let index = 0;
+
+    function loop() {
+        if (!isAnimating || index >= animationSteps.length) {
+            isAnimating = false;
+            log("Finished.");
+            return;
+        }
+
+        const step = animationSteps[index];
+        drawGraph(step);
+        log(step.description);
+
+        index++;
+        setTimeout(loop, animationSpeed);
+    }
+
+    loop();
+}
+
+// Initial Graph
+generateGraph();

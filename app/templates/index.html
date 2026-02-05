@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortest Path - Visualizer</title>
+    <link rel="icon" href="/static/assets/pacman.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pacblack: '#000000',
+                        pacblue: '#1919A6',
+                        pacbluebright: '#2121DE',
+                        pacyellow: '#FFFF00',
+                        pacred: '#FF0000',
+                        pacpink: '#FFB8FF',
+                        paccyan: '#00FFFF',
+                        pacorange: '#FFB852',
+                        pacpanel: '#111',
+                    },
+                    fontFamily: {
+                        mono: ['"Roboto Mono"', 'monospace'],
+                        retro: ['"Press Start 2P"', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        h1,
+        h2,
+        .retro-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .neon-border {
+            border: 4px double #1919A6;
+        }
+
+        canvas {
+            background: radial-gradient(circle, #0a0a0a 0%, #000000 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-pacblack text-white h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="w-96 bg-pacpanel border-r-4 border-pacblue flex flex-col p-5 gap-4 overflow-y-auto shrink-0">
+        <div class="text-pacyellow text-2xl retro-font mb-4 drop-shadow-md text-center">SHORTEST-PATH</div>
+
+        <!-- Graph Settings -->
+        <div class="border-2 border-pacblue p-4 rounded bg-black">
+            <label class="block text-paccyan font-bold mb-2">GRAPH SETTINGS</label>
+
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1 flex justify-between">
+                    <span>Nodes</span>
+                    <span id="nodesValue" class="text-pacyellow">30</span>
+                </label>
+                <input type="range" id="numNodes" min="5" max="100" value="30" class="w-full accent-pacyellow">
+            </div>
+
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1 flex justify-between">
+                    <span>Density</span>
+                    <span id="densityValue" class="text-pacyellow">0.2</span>
+                </label>
+                <input type="range" id="density" min="0" max="1" step="0.1" value="0.2" class="w-full accent-pacyellow">
+            </div>
+
+            <div class="mb-3">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="directed" class="accent-pacyellow w-4 h-4">
+                    <span class="text-sm text-gray-400">Directed</span>
+                </label>
+            </div>
+
+            <button id="btnGenerate"
+                class="w-full bg-pacblue hover:bg-pacbluebright text-white font-bold py-2 px-4 border-none transition transform hover:scale-105">
+                GENERATE NEW
+            </button>
+        </div>
+
+        <!-- Algorithm Settings -->
+        <div class="border-2 border-pacblue p-4 rounded bg-black">
+            <label class="block text-paccyan font-bold mb-2">ALGORITHM</label>
+
+            <select id="algorithmSelect"
+                class="w-full bg-black border-2 border-gray-700 p-2 text-white mb-3 focus:border-pacyellow outline-none">
+                <option value="Dijkstra">Dijkstra</option>
+                <option value="A*">A* Search</option>
+                <option value="Greedy Best-First">Greedy Best-First</option>
+                <option value="Bellman-Ford">Bellman-Ford</option>
+                <option value="Uniform Cost Search">Uniform Cost Search</option>
+                <option value="Floyd-Warshall">Floyd-Warshall</option>
+            </select>
+
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">Speed</label>
+                <select id="speedSelect"
+                    class="w-full bg-black border-2 border-gray-700 p-2 text-white focus:border-pacyellow outline-none">
+                    <option value="1000">Slow</option>
+                    <option value="100" selected>Fast</option>
+                    <option value="10">Max</option>
+                </select>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="btnRun"
+                    class="flex-1 bg-pacblue hover:bg-pacbluebright text-white font-bold py-2 border-none transition transform hover:scale-105">
+                    RUN
+                </button>
+                <button id="btnRunAll"
+                    class="flex-1 bg-pacorange hover:bg-orange-600 text-black font-bold py-2 border-none transition">
+                    RUN ALL
+                </button>
+            </div>
+            <button id="btnViewCode"
+                class="w-full mt-3 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 border border-gray-600 transition text-xs">
+                VIEW ALGORITHM CODE
+            </button>
+        </div>
+
+        <!-- Live Stats (Moved from Overlay) -->
+        <div class="border-2 border-pacblue p-4 rounded bg-black text-xs font-mono">
+            <label class="block text-paccyan font-bold mb-2">LIVE STATS</label>
+            <div class="flex justify-between mb-1 border-b border-gray-800 pb-1">
+                <span class="text-pacpink">STATUS</span>
+                <span id="statusText" class="text-white">IDLE</span>
+            </div>
+            <div class="flex justify-between mb-1 border-b border-gray-800 pb-1">
+                <span class="text-pacpink">NODES</span>
+                <span id="nodeCount" class="text-white">0</span>
+            </div>
+            <div class="flex justify-between mb-1 border-b border-gray-800 pb-1">
+                <span class="text-pacpink">VISITED</span>
+                <span id="visitedCount" class="text-white">0</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-pacpink">COST</span>
+                <span id="currentCost" class="text-white">0</span>
+            </div>
+        </div>
+
+        <!-- Log (Hidden) -->
+        <div id="logArea" style="display:none;"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col p-5 relative">
+        <!-- Tabs -->
+        <div class="flex gap-4 mb-4">
+            <a href="/"
+                class="px-6 py-2 bg-pacblack text-pacyellow border-b-2 border-pacyellow retro-font text-xs">VISUALIZE</a>
+            <a href="/batch"
+                class="px-6 py-2 bg-gray-900 text-gray-500 hover:text-white border-b-2 border-transparent hover:border-gray-700 retro-font text-xs transition">BATCH
+                STATS</a>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 neon-border relative flex justify-center items-center bg-gray-900">
+            <canvas id="graphCanvas" class="absolute inset-0 w-full h-full"></canvas>
+            <!-- Overlay Removed -->
+        </div>
+    </div>
+
+    <!-- Run All Modal -->
+    <div id="runAllModal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-10">
+        <div
+            class="bg-black border-4 double border-pacblue p-8 max-w-4xl w-full max-h-full overflow-y-auto relative shadow-2xl shadow-blue-900/50">
+            <button id="closeModal"
+                class="absolute top-4 right-4 text-pacred text-xl font-bold hover:scale-110 transition">X</button>
+            <h2 class="text-pacyellow text-2xl retro-font mb-6 text-center border-b-2 border-pacyellow pb-4">MISSION
+                RESULTS</h2>
+
+            <div id="modalLoading" class="text-center text-paccyan animate-pulse py-10 retro-font hidden">
+                CALCULATING PATHS...
+            </div>
+
+            <div id="modalContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Results populated by JS -->
+            </div>
+        </div>
+        <div id="codeModal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-10">
+            <div
+                class="bg-gray-900 border-4 border-pacblue p-6 max-w-5xl w-full h-[80vh] flex flex-col relative shadow-2xl">
+                <button id="closeCodeModal"
+                    class="absolute top-4 right-4 text-pacred text-xl font-bold hover:scale-110 transition">X</button>
+                <h2 id="codeModalTitle" class="text-pacyellow text-xl retro-font mb-4 border-b border-gray-700 pb-2">
+                    ALGORITHM CODE</h2>
+                <div class="flex-1 overflow-auto bg-black p-4 border border-gray-800 text-sm font-mono text-green-400">
+                    <pre><code id="codeContent">Loading...</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <script src="/static/js/viz.js"></script>
+</body>
+
+</html>

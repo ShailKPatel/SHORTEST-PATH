@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+networkx
+pydantic
+scipy
+jinja2
