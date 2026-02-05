@@ -59,15 +59,15 @@
             </div>
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-1">Nodes per Graph</label>
-                <input type="number" id="batchNodes" value="30"
+                <input type="number" id="batchNodes" value="10"
                     class="w-full bg-black border-2 border-gray-700 p-2 text-white focus:border-pacyellow outline-none">
             </div>
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-1 flex justify-between">
                     <span>Density</span>
-                    <span id="batchDensityValue" class="text-pacyellow">0.2</span>
+                    <span id="batchDensityValue" class="text-pacyellow">0.4</span>
                 </label>
-                <input type="range" id="batchDensity" min="0" max="1" step="0.1" value="0.2"
+                <input type="range" id="batchDensity" min="0" max="1" step="0.1" value="0.4"
                     class="w-full accent-pacyellow">
             </div>
             <div class="mb-4">
@@ -100,7 +100,7 @@
                     Search
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="Floyd-Warshall" checked class="accent-pacyellow"> Floyd-Warshall
+                    <input type="checkbox" value="Floyd-Warshall" class="accent-pacyellow"> Floyd-Warshall
                 </label>
             </div>
         </div>
@@ -127,14 +127,14 @@
             <div id="resultsContainer" class="space-y-8">
                 <!-- Table -->
                 <div class="overflow-x-auto border border-gray-800">
-                    <table id="statsTable" class="w-full text-sm text-left text-gray-400">
+                    <table id="statsTable" class="w-full text-sm text-left text-gray-400 table-fixed">
                         <thead class="text-xs text-pacyellow uppercase bg-gray-900">
                             <tr>
-                                <th class="px-6 py-3 retro-font text-[10px]">ALGORITHM</th>
-                                <th class="px-6 py-3 retro-font text-[10px]">SUCCESS %</th>
-                                <th class="px-6 py-3 retro-font text-[10px]">AVG COST</th>
-                                <th class="px-6 py-3 retro-font text-[10px]">AVG EXPANSIONS</th>
-                                <th class="px-6 py-3 retro-font text-[10px]">AVG TIME (ms)</th>
+                                <th class="px-6 py-3 retro-font text-[10px] w-1/4">ALGORITHM</th>
+                                <th class="px-6 py-3 retro-font text-[10px] w-1/6 text-center">SUCCESS %</th>
+                                <th class="px-6 py-3 retro-font text-[10px] w-1/6 text-center">AVG COST</th>
+                                <th class="px-6 py-3 retro-font text-[10px] w-1/6 text-center">AVG EXPANSIONS</th>
+                                <th class="px-6 py-3 retro-font text-[10px] w-1/4 text-center">AVG TIME (ms)</th>
                             </tr>
                         </thead>
                         <tbody class="bg-black divide-y divide-gray-800">

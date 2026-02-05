@@ -1,7 +1,28 @@
+const ALGO_ORDER = ["Dijkstra", "A*", "Greedy Best-First", "Bellman-Ford", "Uniform Cost Search", "Floyd-Warshall"];
+
+// Chart instances (declared early to avoid hoisting issues)
+let costChartInst = null;
+let timeChartInst = null;
+
 document.getElementById('btnRunBatch').addEventListener('click', runBatch);
 document.getElementById('batchDensity').addEventListener('input', (e) => {
     document.getElementById('batchDensityValue').innerText = e.target.value;
 });
+
+// Initialize Table on Load
+initTable();
+
+function initTable() {
+    const stats = ALGO_ORDER.map(algo => ({
+        algorithm: algo,
+        success_rate: 0,
+        avg_cost: 0,
+        avg_nodes: 0,
+        avg_time: 0
+    }));
+    renderTable(stats);
+    renderCharts(stats);
+}
 
 async function runBatch() {
     const btn = document.getElementById('btnRunBatch');
@@ -111,24 +132,26 @@ function renderTable(stats) {
     const tbody = document.querySelector('#statsTable tbody');
     tbody.innerHTML = '';
 
-    // Sort by Avg Cost
-    stats.sort((a, b) => a.avg_cost - b.avg_cost);
+    // Sort by Algorithm Order (using Global ALGO_ORDER)
+    stats.sort((a, b) => {
+        const idxA = ALGO_ORDER.indexOf(a.algorithm);
+        const idxB = ALGO_ORDER.indexOf(b.algorithm);
+        // Handle cases where algorithm might not be in the list (fallback to end)
+        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+    });
 
     stats.forEach(s => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${s.algorithm}</td>
-            <td>${(s.success_rate * 100).toFixed(0)}%</td>
-            <td>${s.avg_cost.toFixed(2)}</td>
-            <td>${s.avg_nodes.toFixed(2)}</td>
-            <td>${(s.avg_time * 1000).toFixed(2)} ms</td>
+            <td class="px-6 py-3">${s.algorithm}</td>
+            <td class="px-6 py-3 text-center">${(s.success_rate * 100).toFixed(0)}%</td>
+            <td class="px-6 py-3 text-center">${s.avg_cost.toFixed(2)}</td>
+            <td class="px-6 py-3 text-center">${s.avg_nodes.toFixed(2)}</td>
+            <td class="px-6 py-3 text-center">${(s.avg_time * 1000).toFixed(2)} ms</td>
         `;
         tbody.appendChild(tr);
     });
 }
-
-let costChartInst = null;
-let timeChartInst = null;
 
 function renderCharts(stats) {
     const labels = stats.map(s => s.algorithm);

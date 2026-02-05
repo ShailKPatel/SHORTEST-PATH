@@ -179,15 +179,22 @@ function drawGraph(stepState = null) {
         ctx.strokeStyle = COLORS.edge;
         ctx.lineWidth = 1;
 
-        // Highlight edge
+        // Highlight edges in the shortest path
+        let isInPath = false;
         if (stepState && stepState.parents) {
-            if (stepState.parents[edge.target] === edge.source || stepState.parents[edge.source] === edge.target) {
-                // Bidirectional check implicitly
-                if (stepState.parents[edge.target] === edge.source) {
-                    ctx.strokeStyle = COLORS.visited;
-                    ctx.lineWidth = 2;
-                }
+            // Check if this edge is part of the shortest path
+            if (stepState.parents[edge.target] === edge.source) {
+                isInPath = true;
             }
+            // For undirected graphs, check both directions
+            if (!graph.directed && stepState.parents[edge.source] === edge.target) {
+                isInPath = true;
+            }
+        }
+
+        if (isInPath) {
+            ctx.strokeStyle = '#FFFF00'; // Yellow for path
+            ctx.lineWidth = 4;
         }
 
         ctx.stroke();
@@ -464,6 +471,24 @@ function startAnimation() {
     function loop() {
         if (!isAnimating || index >= animationSteps.length) {
             isAnimating = false;
+
+            // Show final state with path highlighted
+            if (animationSteps.length > 0) {
+                const finalStep = animationSteps[animationSteps.length - 1];
+                drawGraph(finalStep);
+                document.getElementById('statusText').innerText = "COMPLETE";
+
+                // Log final path cost
+                if (finalStep.distances[endNode] !== undefined) {
+                    const finalCost = finalStep.distances[endNode];
+                    if (finalCost === Infinity || finalCost === "Infinity") {
+                        log("No path found!");
+                    } else {
+                        log(`Path found! Total cost: ${Number(finalCost).toFixed(2)}`);
+                    }
+                }
+            }
+
             log("Finished.");
             return;
         }
@@ -479,5 +504,50 @@ function startAnimation() {
     loop();
 }
 
-// Initial Graph
-generateGraph();
+// Initial Graph - Generate and Run Algorithm on Load
+generateGraph().then(() => {
+    // Wait a bit for graph to render, then auto-run the selected algorithm
+    setTimeout(() => {
+        runAlgorithm();
+    }, 500);
+});
+
+// View Code feature
+document.getElementById('closeCodeModal').addEventListener('click', () => {
+    document.getElementById('codeModal').classList.add('hidden');
+});
+
+// ESC key to close modal
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('codeModal');
+        if (!modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    }
+});
+
+async function viewAlgorithmCode() {
+    const algo = document.getElementById('algorithmSelect').value;
+    const modal = document.getElementById('codeModal');
+    const content = document.getElementById('codeContent');
+    const title = document.getElementById('codeModalTitle');
+
+    title.innerText = `${algo.toUpperCase()} - PYTHON CODE`;
+    modal.classList.remove('hidden');
+    content.innerText = "Loading source code...";
+
+    try {
+        // Encode algo name for URL
+        const res = await fetch(`/api/algorithm-code/${encodeURIComponent(algo)}`);
+        const data = await res.json();
+
+        if (res.ok) {
+            content.innerText = data.code;
+        } else {
+            content.innerText = `Error: ${data.detail || 'Failed to load code'}`;
+        }
+    } catch (e) {
+        content.innerText = `Failed to fetch code: ${e.message}`;
+    }
+}

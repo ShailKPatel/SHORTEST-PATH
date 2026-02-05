@@ -66,17 +66,17 @@
             <div class="mb-3">
                 <label class="block text-sm text-gray-400 mb-1 flex justify-between">
                     <span>Nodes</span>
-                    <span id="nodesValue" class="text-pacyellow">30</span>
+                    <span id="nodesValue" class="text-pacyellow">6</span>
                 </label>
-                <input type="range" id="numNodes" min="5" max="100" value="30" class="w-full accent-pacyellow">
+                <input type="range" id="numNodes" min="5" max="100" value="6" class="w-full accent-pacyellow">
             </div>
 
             <div class="mb-3">
                 <label class="block text-sm text-gray-400 mb-1 flex justify-between">
                     <span>Density</span>
-                    <span id="densityValue" class="text-pacyellow">0.2</span>
+                    <span id="densityValue" class="text-pacyellow">0.4</span>
                 </label>
-                <input type="range" id="density" min="0" max="1" step="0.1" value="0.2" class="w-full accent-pacyellow">
+                <input type="range" id="density" min="0" max="1" step="0.1" value="0.4" class="w-full accent-pacyellow">
             </div>
 
             <div class="mb-3">
@@ -103,7 +103,7 @@
                 <option value="Greedy Best-First">Greedy Best-First</option>
                 <option value="Bellman-Ford">Bellman-Ford</option>
                 <option value="Uniform Cost Search">Uniform Cost Search</option>
-                <option value="Floyd-Warshall">Floyd-Warshall</option>
+                <option value="Floyd-Warshall" selected>Floyd-Warshall</option>
             </select>
 
             <div class="mb-3">
@@ -194,13 +194,17 @@
         </div>
         <div id="codeModal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-10">
             <div
-                class="bg-gray-900 border-4 border-pacblue p-6 max-w-5xl w-full h-[80vh] flex flex-col relative shadow-2xl">
+                class="bg-gray-900 border-4 border-pacblue p-6 max-w-6xl w-full h-[85vh] flex flex-col relative shadow-2xl rounded-lg">
                 <button id="closeCodeModal"
-                    class="absolute top-4 right-4 text-pacred text-xl font-bold hover:scale-110 transition">X</button>
-                <h2 id="codeModalTitle" class="text-pacyellow text-xl retro-font mb-4 border-b border-gray-700 pb-2">
+                    class="absolute top-4 right-4 text-pacred text-2xl font-bold hover:scale-110 transition z-10 bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center">×</button>
+                <h2 id="codeModalTitle" class="text-pacyellow text-2xl retro-font mb-4 border-b-2 border-pacblue pb-3">
                     ALGORITHM CODE</h2>
-                <div class="flex-1 overflow-auto bg-black p-4 border border-gray-800 text-sm font-mono text-green-400">
-                    <pre><code id="codeContent">Loading...</code></pre>
+                <div class="flex-1 overflow-auto bg-gray-950 p-6 border-2 border-gray-700 rounded-lg shadow-inner">
+                    <pre
+                        class="text-sm leading-relaxed"><code id="codeContent" class="text-green-400 font-mono whitespace-pre">Loading...</code></pre>
+                </div>
+                <div class="mt-4 text-xs text-gray-500 text-center retro-font">
+                    Press ESC or click X to close
                 </div>
             </div>
         </div>

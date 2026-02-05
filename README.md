@@ -4,19 +4,20 @@ A verification and educational tool to demonstrate shortest-path algorithms on w
 
 ## Features
 
-- **Interactive Visualization**: Watch Dijkstra, A*, Bellman-Ford, and others explore the graph in real-time.
+- **Interactive Visualization**: Watch algorithms explore the graph in real-time from start (Pac-Man 🟡) to goal (Ghost 👻).
+- **Single-Source → Single-Target**: All algorithms find the shortest path from one start node to one end node.
 - **Pac-Man Theme**: Retro-styled UI for a unique user experience.
-- **Batch Analysis**: run 30 random graphs to statistically compare algorithm performance.
+- **Batch Analysis**: Run multiple random graphs to statistically compare algorithm performance.
 - **FastAPI Backend**: Robust API-driven architecture.
 - **Vanilla JS Frontend**: Lightweight, responsive visualization using HTML5 Canvas.
 
 ## Algorithms
-1. **Dijkstra**: Guaranteed optimal.
-2. **A* Search**: Heuristic-driven (Euclidean distance).
+1. **Dijkstra**: Guaranteed optimal for non-negative weights.
+2. **A* Search**: Heuristic-driven (Euclidean distance) - optimal with admissible heuristic.
 3. **Greedy Best-First**: Fast but not guaranteed optimal.
-4. **Bellman-Ford**: Handles negative weights (though we restrict to positive for this demo).
-5. **Bidirectional Dijkstra**: Meet-in-the-middle optimization.
-6. **Floyd-Warshall**: All-pairs shortest path (visualized by pivot).
+4. **Bellman-Ford**: Handles negative weights (restricted to positive for this demo).
+5. **Uniform Cost Search**: Equivalent to Dijkstra for non-negative weights.
+6. **Floyd-Warshall**: All-pairs shortest path (adapted for single-source visualization).
 
 ## Setup & Run
 
