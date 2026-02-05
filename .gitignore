@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS noise
+.vscode/
+.idea/
+.DS_Store
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
