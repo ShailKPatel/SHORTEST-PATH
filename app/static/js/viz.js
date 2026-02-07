@@ -206,7 +206,7 @@ function drawGraph(stepState = null) {
         ctx.lineTo(v.canvasX, v.canvasY);
 
         if (graph.directed) {
-            // Draw arrow (simplified)
+            drawArrow(ctx, u.canvasX, u.canvasY, v.canvasX, v.canvasY);
         }
 
         ctx.strokeStyle = COLORS.edge;
