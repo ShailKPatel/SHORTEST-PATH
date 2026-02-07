@@ -15,12 +15,12 @@ const NODE_RADIUS = 15;
 const COLORS = {
     bg: '#000000',
     edge: '#333333',
-    edgeHighlight: '#FFFF00',
+    edgeHighlight: '#ff0000ff',
     node: '#00FFFF', // Cyan border
     nodeFill: '#000000',
     start: '#FFFF00',
-    end: '#FFB8FF',
-    visited: '#2121DE',
+    end: '#2121DE',
+    visited: '#FFB8FF',
     frontier: '#FFFFFF',
     path: '#FFFF00'
 };
@@ -38,8 +38,12 @@ document.getElementById('density').addEventListener('input', (e) => {
 });
 
 function resizeCanvas() {
-    canvas.width = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
+    canvas.width = canvas.parentElement.clientWidth || 800; // Fallback to 800 if 0
+    canvas.height = canvas.parentElement.clientHeight || 600; // Fallback to 600 if 0
+
+    if (canvas.width === 0) canvas.width = 800;
+    if (canvas.height === 0) canvas.height = 600;
+
     if (graph) {
         normalizeGraphCoords(); // Re-normalize on resize
         drawGraph();
@@ -67,11 +71,9 @@ document.getElementById('endNodeSelect').addEventListener('change', (e) => {
     drawGraph();
 });
 
-document.getElementById('btnReset').addEventListener('click', () => {
-    isAnimating = false;
-    currentStepIndex = 0;
-    if (graph) drawGraph();
-});
+// btnReset element does not exist in HTML, removing listener to prevent crash
+// document.getElementById('btnReset').addEventListener('click', () => { ... });
+
 document.getElementById('speedSelect').addEventListener('change', (e) => {
     animationSpeed = parseInt(e.target.value);
 });
@@ -82,16 +84,40 @@ document.getElementById('closeModal').addEventListener('click', () => {
 
 
 // Logic
-async function generateGraph() {
-    const numNodes = document.getElementById('numNodes').value;
-    const density = document.getElementById('density').value;
-    const directed = document.getElementById('directed').checked;
+async function generateGraph(nodesOrEvent = null, densityParam = null, directedParam = null) {
+    let numNodes, density, directed;
+
+    // Check if first arg is an event (from click listener) or null
+    const isEvent = nodesOrEvent && (nodesOrEvent instanceof Event || nodesOrEvent.jquery);
+
+    if (!isEvent && nodesOrEvent !== null) {
+        // Called with explicit parameters
+        numNodes = nodesOrEvent;
+        density = densityParam;
+        directed = directedParam;
+
+        // Sync UI to match these defaults if needed, 
+        // but for now we just use them for generation.
+        // (Optional: update DOM elements to reflect these values if valid)
+        document.getElementById('numNodes').value = numNodes;
+        document.getElementById('nodesValue').innerText = numNodes;
+        document.getElementById('density').value = density;
+        document.getElementById('densityValue').innerText = density;
+        document.getElementById('directed').checked = directed;
+
+    } else {
+        // Called from Event or no args -> Read from DOM
+        numNodes = document.getElementById('numNodes').value;
+        density = document.getElementById('density').value;
+        directed = document.getElementById('directed').checked;
+    }
 
     // Clear graph before generating
+    resizeCanvas();
     graph = null;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    log(`Generating graph... Nodes: ${numNodes}`);
+    log(`Generating graph... Nodes: ${numNodes}, Density: ${density}, Directed: ${directed}. Canvas: ${canvas.width}x${canvas.height}`);
 
     try {
         const res = await fetch('/api/generate-graph', {
@@ -100,7 +126,7 @@ async function generateGraph() {
             body: JSON.stringify({
                 num_nodes: parseInt(numNodes),
                 density: parseFloat(density),
-                directed: directed
+                directed: !!directed // Ensure boolean
             })
         });
 
@@ -567,12 +593,14 @@ function startAnimation() {
     loop();
 }
 
-// Initial Graph - Generate and Run Algorithm on Load
-generateGraph().then(() => {
-    // Wait a bit for graph to render, then auto-run the selected algorithm
+// Initial Graph - Generate automatically on Load
+document.addEventListener("DOMContentLoaded", () => {
+    // Wait for Tailwind classes to apply (CDN delay)
     setTimeout(() => {
-        runAlgorithm();
-    }, 500);
+        resizeCanvas();
+        // Generate graph with defaults: 6 nodes, 0.4 density, false directed
+        generateGraph(6, 0.4, false);
+    }, 300);
 });
 
 // View Code feature
