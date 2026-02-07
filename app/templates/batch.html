@@ -20,6 +20,9 @@
                         retrobluebright: '#2121DE',
                         retroyellow: '#FFFF00',
                         retrored: '#FF0000',
+                        retropink: '#FFB8FF',
+                        retrocyan: '#00FFFF',
+                        retroorange: '#FFB852',
                         retropanel: '#111',
                     },
                     fontFamily: {
@@ -50,18 +53,18 @@
         <div class="text-retroyellow text-2xl retro-font mb-4 drop-shadow-md text-center">SHORTEST-PATH</div>
 
         <div class="border-2 border-retroblue p-4 rounded bg-black">
-            <label class="block text-retroyellow font-bold mb-2">BATCH CONFIG</label>
+            <label class="block text-retrocyan font-bold mb-2">BATCH CONFIG</label>
             <p class="text-xs text-gray-500 mb-4">Compare algorithms on multiple random graphs.</p>
 
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-1">Number of Graphs</label>
                 <input type="number" id="numGraphs" value="30" min="1" max="100"
-                    class="w-full bg-black border-2 border-gray-700 p-2 text-white focus:border-pacyellow outline-none">
+                    class="w-full bg-black border-2 border-gray-700 p-2 text-white focus:border-retroyellow outline-none">
             </div>
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-1">Nodes per Graph</label>
                 <input type="number" id="batchNodes" value="10" min="2"
-                    class="w-full bg-black border-2 border-gray-700 p-2 text-white focus:border-pacyellow outline-none">
+                    class="w-full bg-black border-2 border-gray-700 p-2 text-white focus:border-retroyellow outline-none">
             </div>
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-1 flex justify-between">
@@ -79,13 +82,13 @@
             </div>
 
             <button id="btnRunBatch"
-                class="w-full bg-retroblue hover:bg-blue-700 text-white font-bold py-3 border-none transition transform hover:scale-105 retro-font text-xs">
+                class="w-full bg-retroblue hover:bg-retrobluebright text-white font-bold py-3 border-none transition transform hover:scale-105 retro-font text-xs">
                 RUN BATCH
             </button>
         </div>
 
         <div class="border-2 border-retroblue p-4 rounded bg-black">
-            <label class="block text-retroyellow font-bold mb-2">ALGORITHMS</label>
+            <label class="block text-retrocyan font-bold mb-2">ALGORITHMS</label>
             <div id="algoCheckboxes" class="text-xs space-y-2 text-gray-400">
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
                     <input type="checkbox" value="Dijkstra" checked class="accent-retroyellow"> Dijkstra
@@ -103,6 +106,7 @@
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
                     <input type="checkbox" value="A*" checked class="accent-retroyellow"> A* Search
                 </label>
+
             </div>
         </div>
     </div>
