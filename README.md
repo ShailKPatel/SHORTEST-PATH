@@ -4,9 +4,8 @@ A verification and educational tool to demonstrate shortest-path algorithms on w
 
 ## Features
 
-- **Interactive Visualization**: Watch algorithms explore the graph in real-time from start (Pac-Man 🟡) to goal (Ghost 👻).
+- **Interactive Visualization**: Watch algorithms explore the graph in real-time from start to goal.
 - **Single-Source → Single-Target**: All algorithms find the shortest path from one start node to one end node.
-- **Pac-Man Theme**: Retro-styled UI for a unique user experience.
 - **Batch Analysis**: Run multiple random graphs to statistically compare algorithm performance.
 - **FastAPI Backend**: Robust API-driven architecture.
 - **Vanilla JS Frontend**: Lightweight, responsive visualization using HTML5 Canvas.

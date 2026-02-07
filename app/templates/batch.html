@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shortest Path - Batch Statistics</title>
-    <link rel="icon" href="/static/assets/pacman.png" type="image/png">
+    <!-- <link rel="icon" href="/static/assets/pacman.png" type="image/png"> -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@400;700&display=swap"
         rel="stylesheet">
@@ -15,11 +15,12 @@
             theme: {
                 extend: {
                     colors: {
-                        pacblack: '#000000',
-                        pacblue: '#1919A6',
-                        pacyellow: '#FFFF00',
-                        pacred: '#FF0000',
-                        pacpanel: '#111',
+                        retroblack: '#000000',
+                        retroblue: '#1919A6',
+                        retrobluebright: '#2121DE',
+                        retroyellow: '#FFFF00',
+                        retrored: '#FF0000',
+                        retropanel: '#111',
                     },
                     fontFamily: {
                         mono: ['"Roboto Mono"', 'monospace'],
@@ -42,14 +43,14 @@
     </style>
 </head>
 
-<body class="bg-pacblack text-white h-screen flex overflow-hidden">
+<body class="bg-retroblack text-white h-screen flex overflow-hidden">
 
     <!-- Sidebar -->
-    <div class="w-96 bg-pacpanel border-r-4 border-pacblue flex flex-col p-5 gap-4 overflow-y-auto shrink-0">
-        <div class="text-pacyellow text-2xl retro-font mb-4 drop-shadow-md text-center">SHORTEST-PATH</div>
+    <div class="w-96 bg-retropanel border-r-4 border-retroblue flex flex-col p-5 gap-4 overflow-y-auto shrink-0">
+        <div class="text-retroyellow text-2xl retro-font mb-4 drop-shadow-md text-center">SHORTEST-PATH</div>
 
-        <div class="border-2 border-pacblue p-4 rounded bg-black">
-            <label class="block text-pacyellow font-bold mb-2">BATCH CONFIG</label>
+        <div class="border-2 border-retroblue p-4 rounded bg-black">
+            <label class="block text-retroyellow font-bold mb-2">BATCH CONFIG</label>
             <p class="text-xs text-gray-500 mb-4">Compare algorithms on multiple random graphs.</p>
 
             <div class="mb-4">
@@ -65,42 +66,42 @@
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-1 flex justify-between">
                     <span>Density</span>
-                    <span id="batchDensityValue" class="text-pacyellow">0.4</span>
+                    <span id="batchDensityValue" class="text-retroyellow">0.4</span>
                 </label>
                 <input type="range" id="batchDensity" min="0" max="1" step="0.1" value="0.4"
-                    class="w-full accent-pacyellow">
+                    class="w-full accent-retroyellow">
             </div>
             <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-1">Directed: False</label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="batchDirected" class="accent-retroyellow w-4 h-4">
+                    <span class="text-sm text-gray-400">Directed</span>
+                </label>
             </div>
 
             <button id="btnRunBatch"
-                class="w-full bg-pacblue hover:bg-blue-700 text-white font-bold py-3 border-none transition transform hover:scale-105 retro-font text-xs">
+                class="w-full bg-retroblue hover:bg-blue-700 text-white font-bold py-3 border-none transition transform hover:scale-105 retro-font text-xs">
                 RUN BATCH
             </button>
         </div>
 
-        <div class="border-2 border-pacblue p-4 rounded bg-black">
-            <label class="block text-pacyellow font-bold mb-2">ALGORITHMS</label>
+        <div class="border-2 border-retroblue p-4 rounded bg-black">
+            <label class="block text-retroyellow font-bold mb-2">ALGORITHMS</label>
             <div id="algoCheckboxes" class="text-xs space-y-2 text-gray-400">
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="Dijkstra" checked class="accent-pacyellow"> Dijkstra
+                    <input type="checkbox" value="Dijkstra" checked class="accent-retroyellow"> Dijkstra
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="A*" checked class="accent-pacyellow"> A* Search
+                    <input type="checkbox" value="Bellman-Ford" checked class="accent-retroyellow"> Bellman-Ford
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="Greedy Best-First" checked class="accent-pacyellow"> Greedy Best-First
+                    <input type="checkbox" value="Floyd-Warshall" class="accent-retroyellow"> Floyd-Warshall
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="Bellman-Ford" checked class="accent-pacyellow"> Bellman-Ford
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="Uniform Cost Search" checked class="accent-pacyellow"> Uniform Cost
+                    <input type="checkbox" value="Uniform Cost Search" checked class="accent-retroyellow"> Uniform Cost
                     Search
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer hover:text-white">
-                    <input type="checkbox" value="Floyd-Warshall" class="accent-pacyellow"> Floyd-Warshall
+                    <input type="checkbox" value="A*" checked class="accent-retroyellow"> A* Search
                 </label>
             </div>
         </div>
@@ -113,14 +114,14 @@
             <a href="/"
                 class="px-6 py-2 bg-gray-900 text-gray-500 hover:text-white border-b-2 border-transparent hover:border-gray-700 retro-font text-xs transition">VISUALIZE</a>
             <a href="/batch"
-                class="px-6 py-2 bg-pacblack text-pacyellow border-b-2 border-pacyellow retro-font text-xs">BATCH
+                class="px-6 py-2 bg-retroblack text-retroyellow border-b-2 border-retroyellow retro-font text-xs">BATCH
                 STATS</a>
         </div>
 
         <div class="flex-1 overflow-y-auto pr-2">
-            <h1 class="text-pacyellow text-xl mb-6 retro-font">LEADERBOARD</h1>
+            <h1 class="text-retroyellow text-xl mb-6 retro-font">LEADERBOARD</h1>
 
-            <div id="loading" class="hidden text-pacyellow text-center text-xl animate-pulse my-10 retro-font">
+            <div id="loading" class="hidden text-retroyellow text-center text-xl animate-pulse my-10 retro-font">
                 RUNNING SIMULATION... PLEASE WAIT...
             </div>
 
@@ -128,7 +129,7 @@
                 <!-- Table -->
                 <div class="overflow-x-auto border border-gray-800">
                     <table id="statsTable" class="w-full text-sm text-left text-gray-400 table-fixed">
-                        <thead class="text-xs text-pacyellow uppercase bg-gray-900">
+                        <thead class="text-xs text-retroyellow uppercase bg-gray-900">
                             <tr>
                                 <th class="px-6 py-3 retro-font text-[10px] w-1/4">ALGORITHM</th>
                                 <th class="px-6 py-3 retro-font text-[10px] w-1/6 text-center">SUCCESS %</th>

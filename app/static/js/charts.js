@@ -1,4 +1,4 @@
-const ALGO_ORDER = ["Dijkstra", "A*", "Greedy Best-First", "Bellman-Ford", "Uniform Cost Search", "Floyd-Warshall"];
+const ALGO_ORDER = ["Dijkstra", "Bellman-Ford", "Floyd-Warshall", "Uniform Cost Search", "A*"];
 
 // Chart instances (declared early to avoid hoisting issues)
 let costChartInst = null;
@@ -30,6 +30,7 @@ async function runBatch() {
     const nodes = document.getElementById('batchNodes').value;
     const density = document.getElementById('batchDensity').value;
     const numGraphs = document.getElementById('numGraphs').value;
+    const directed = document.getElementById('batchDirected').checked;
 
     // Get Selected Algorithms
     const selectedAlgos = Array.from(document.querySelectorAll('#algoCheckboxes input:checked'))
@@ -51,7 +52,7 @@ async function runBatch() {
                 num_graphs: parseInt(numGraphs),
                 num_nodes: parseInt(nodes),
                 density: parseFloat(density),
-                directed: false,
+                directed: directed,
                 algorithms: selectedAlgos
             })
         });

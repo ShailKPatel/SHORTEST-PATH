@@ -16,12 +16,12 @@ const COLORS = {
     bg: '#000000',
     edge: '#333333',
     edgeHighlight: '#FFFF00',
-    node: '#00FFFF', // Cyan border for visibility
+    node: '#00FFFF', // Cyan border
     nodeFill: '#000000',
-    start: '#FFFF00', // Pacman
-    end: '#ffb8ae',   // Pellet
-    visited: '#2121DE', // Light blue
-    frontier: '#FFFFFF', // White/Blinking
+    start: '#FFFF00',
+    end: '#FFB8FF',
+    visited: '#2121DE',
+    frontier: '#FFFFFF',
     path: '#FFFF00'
 };
 
@@ -50,12 +50,23 @@ function log(msg) {
     console.log(`[SHORTEST-PATH]: ${msg}`);
 }
 
-const ALL_ALGOS = ["Dijkstra", "A*", "Greedy Best-First", "Bellman-Ford", "Uniform Cost Search", "Floyd-Warshall"];
+const ALL_ALGOS = ["Dijkstra", "Bellman-Ford", "Floyd-Warshall", "Uniform Cost Search", "A*"];
 
 // Sidebar Event Listeners
 document.getElementById('btnGenerate').addEventListener('click', generateGraph);
 document.getElementById('btnRun').addEventListener('click', runAlgorithm);
 document.getElementById('btnViewCode').addEventListener('click', viewAlgorithmCode);
+
+// New Selector Listeners
+document.getElementById('startNodeSelect').addEventListener('change', (e) => {
+    startNode = parseInt(e.target.value);
+    drawGraph();
+});
+document.getElementById('endNodeSelect').addEventListener('change', (e) => {
+    endNode = parseInt(e.target.value);
+    drawGraph();
+});
+
 document.getElementById('btnReset').addEventListener('click', () => {
     isAnimating = false;
     currentStepIndex = 0;
@@ -96,18 +107,20 @@ async function generateGraph() {
         graph = await res.json();
         normalizeGraphCoords();
 
-        // Random Start/End
+        // 1. Source to 1 Destination (0 -> Last)
         const nodes = graph.nodes;
         if (nodes.length > 0) {
-            startNode = nodes[Math.floor(Math.random() * nodes.length)].id;
-            let endCandidate = nodes[Math.floor(Math.random() * nodes.length)].id;
-            // Retry a few times to find distinct
-            let retries = 10;
-            while (endCandidate === startNode && retries > 0) {
-                endCandidate = nodes[Math.floor(Math.random() * nodes.length)].id;
-                retries--;
-            }
-            endNode = endCandidate;
+            // Sort nodes by ID just in case, though usually 0..N
+            nodes.sort((a, b) => a.id - b.id);
+
+            populateSelectors(nodes);
+
+            startNode = nodes[0].id; // 0
+            endNode = nodes[nodes.length - 1].id; // Last
+
+            // Set select values
+            document.getElementById('startNodeSelect').value = startNode;
+            document.getElementById('endNodeSelect').value = endNode;
 
             log(`Graph Generated. Start: ${startNode}, End: ${endNode}`);
             drawGraph();
@@ -120,6 +133,26 @@ async function generateGraph() {
     } catch (e) {
         log(`Error: ${e.message}`);
     }
+}
+
+function populateSelectors(nodes) {
+    const startSel = document.getElementById('startNodeSelect');
+    const endSel = document.getElementById('endNodeSelect');
+
+    startSel.innerHTML = '';
+    endSel.innerHTML = '';
+
+    nodes.forEach(n => {
+        const opt1 = document.createElement('option');
+        opt1.value = n.id;
+        opt1.innerText = n.id;
+        startSel.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = n.id;
+        opt2.innerText = n.id;
+        endSel.appendChild(opt2);
+    });
 }
 
 function normalizeGraphCoords() {
@@ -180,15 +213,40 @@ function drawGraph(stepState = null) {
         ctx.lineWidth = 1;
 
         // Highlight edges in the shortest path
+        // Highlight edges in the shortest path
         let isInPath = false;
         if (stepState && stepState.parents) {
-            // Check if this edge is part of the shortest path
-            if (stepState.parents[edge.target] === edge.source) {
-                isInPath = true;
-            }
-            // For undirected graphs, check both directions
-            if (!graph.directed && stepState.parents[edge.source] === edge.target) {
-                isInPath = true;
+            // Strict Path Highlighting: Backtrack from EndNode to StartNode
+            // Only highlight if this edge matches the parent relationship
+
+            // Check if endNode is reached or we are visualizing a path
+            // For general stepState, we might want to show the tree.
+            // But user requested "wrong path" fixed.
+            // So we usually want to highlight the path found SO FAR to current_node or to end_node if done.
+
+            // Let's assume we want to highlight path to endNode if it has a parent,
+            // or maybe path to current_node? 
+            // Typically in these viz, we want final path yellow.
+            // Let's backtrack from endNode.
+
+            let curr = endNode;
+            while (curr !== startNode && curr !== null && stepState.parents[curr] !== undefined) {
+                const p = stepState.parents[curr];
+                if (p === null) break;
+
+                // Check if this edge is (p -> curr)
+                if (edge.source === p && edge.target === curr) {
+                    isInPath = true;
+                }
+                // Undirected check
+                if (!graph.directed && edge.source === curr && edge.target === p) {
+                    isInPath = true;
+                }
+
+                curr = p;
+
+                // Safety break
+                if (curr === startNode) break;
             }
         }
 
@@ -220,12 +278,14 @@ function drawGraph(stepState = null) {
     graph.nodes.forEach(node => {
         let color = COLORS.nodeFill;
         let borderColor = COLORS.node;
+        let textColor = '#fff'; // Default white text
 
         // Dynamic Status
         if (stepState) {
             if (stepState.current_node === node.id) {
                 borderColor = '#FFFFFF';
                 color = '#FFFF00'; // Active
+                textColor = '#000';
             } else if (stepState.frontier.includes(node.id)) {
                 borderColor = '#FFFFFF'; // Blink?
             } else if (stepState.visited.includes(node.id)) {
@@ -233,25 +293,36 @@ function drawGraph(stepState = null) {
             }
         }
 
+        const isStart = (node.id === startNode);
+        const isEnd = (node.id === endNode);
+
+
+
         // Shape
         ctx.beginPath();
-        ctx.arc(node.canvasX, node.canvasY, NODE_RADIUS, 0, 2 * Math.PI);
-        ctx.fillStyle = color;
+        if (isStart) {
+            ctx.fillStyle = COLORS.start;
+            ctx.arc(node.canvasX, node.canvasY, NODE_RADIUS * 1.2, 0, 2 * Math.PI);
+            borderColor = '#fff';
+        } else if (isEnd) {
+            ctx.fillStyle = COLORS.end;
+            ctx.arc(node.canvasX, node.canvasY, NODE_RADIUS * 1.2, 0, 2 * Math.PI);
+            borderColor = '#fff';
+        } else {
+            ctx.arc(node.canvasX, node.canvasY, NODE_RADIUS, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+        }
         ctx.fill();
         ctx.strokeStyle = borderColor;
         ctx.stroke();
 
-        // Special Roles
-        if (node.id === startNode) {
-            drawPacman(node.canvasX, node.canvasY);
-        } else if (node.id === endNode) {
-            drawGhost(node.canvasX, node.canvasY);
-        }
+        if (isStart || isEnd) textColor = '#000';
 
         // ID
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px Roboto Mono';
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 12px Roboto Mono'; // Slightly bigger
         ctx.textAlign = 'center';
+        // Center text in node
         ctx.fillText(node.id, node.canvasX, node.canvasY + 4);
 
         // Distance Label (d=?)
@@ -267,6 +338,7 @@ function drawGraph(stepState = null) {
             distText = "d=0";
         }
 
+        // Draw distance tag above node
         ctx.fillStyle = '#0f0';
         ctx.font = '9px Roboto Mono';
         ctx.fillText(distText, node.canvasX, node.canvasY - 18);
@@ -286,20 +358,9 @@ function drawGraph(stepState = null) {
     }
 }
 
-// Preload Image
-const pacmanImg = new Image();
-pacmanImg.className = 'pacman-icon'; // for debugging
-pacmanImg.src = '/static/assets/pacman.png';
-pacmanImg.onload = () => {
-    // Force redraw when image loads
-    if (graph) drawGraph();
-};
-
-const ghostImg = new Image();
-ghostImg.src = '/static/assets/ghost.png';
-ghostImg.onload = () => {
-    if (graph) drawGraph();
-};
+// No images used
+function drawPacman(x, y) { } // Deprecated
+function drawGhost(x, y) { } // Deprecated
 
 function drawArrow(ctx, x1, y1, x2, y2) {
     const headLength = 10;
@@ -333,14 +394,16 @@ function drawPacman(x, y) {
         ctx.drawImage(pacmanImg, x - size / 2, y - size / 2, size, size);
     } else {
         ctx.beginPath();
-        ctx.arc(x, y, NODE_RADIUS, 0.2 * Math.PI, 1.8 * Math.PI);
-        ctx.lineTo(x, y);
+        ctx.arc(x, y, NODE_RADIUS, 0, 2 * Math.PI); // Full circle fallback
         ctx.fillStyle = COLORS.start;
         ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
     }
 }
 
 function drawGhost(x, y) {
+    // unused right now as both prefer pacman
     if (ghostImg.complete && ghostImg.naturalWidth !== 0) {
         const size = NODE_RADIUS * 2.5;
         ctx.drawImage(ghostImg, x - size / 2, y - size / 2, size, size);
