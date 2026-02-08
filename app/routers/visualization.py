@@ -156,7 +156,6 @@ async def get_algorithm_code(algorithm_name: str):
     FILENAME_MAP = {
         "Dijkstra": "dijkstra.py",
         "A*": "a_star.py",
-        "Greedy Best-First": "greedy_best_first.py",
         "Bellman-Ford": "bellman_ford.py",
         "Uniform Cost Search": "uniform_cost_search.py",
         "Floyd-Warshall": "floyd_warshall.py"
@@ -166,7 +165,8 @@ async def get_algorithm_code(algorithm_name: str):
         raise HTTPException(status_code=404, detail="Algorithm code not found")
         
     filename = FILENAME_MAP[algorithm_name]
-    file_path = os.path.join("app", "algorithms", filename)
+    # Read from algorithms_display directory for educational code
+    file_path = os.path.join("app", "algorithms_display", filename)
     
     try:
         if not os.path.exists(file_path):
